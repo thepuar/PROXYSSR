@@ -20,10 +20,9 @@ public class Peticion {
     private String metodo;
     private String protocol;
     private String uri;
-    private String host;
 
     public Peticion(List<String> cabeceras) {
-        if(cabeceras.size()>0){
+
         this.cabeceras = new HashMap<>();
 
         StringTokenizer st = new StringTokenizer(cabeceras.get(0));
@@ -36,21 +35,19 @@ public class Peticion {
         String contentcab;
         for (int i = 1; i < cabeceras.size(); i++) {
             String valor = cabeceras.get(i);
-            System.out.println("VALOR: "+valor+" - "+valor.length());
-            if(cabeceras.get(i).length()>1){
-            cab = cabeceras.get(i).substring(0,cabeceras.get(i).indexOf(":"));
-            contentcab = cabeceras.get(i).substring(cabeceras.get(i).indexOf(":"), cabeceras.get(i).length());
-            this.cabeceras.put(cab, contentcab);
+            //System.out.println("VALOR: "+valor+" - "+valor.length());
+            if (cabeceras.get(i).length() > 0) {
+                cab = cabeceras.get(i).substring(0, cabeceras.get(i).indexOf(":"));
+                contentcab = cabeceras.get(i).substring(cabeceras.get(i).indexOf(":")+1, cabeceras.get(i).length());
+                this.cabeceras.put(cab, contentcab);
             }
-        }
+
         }
     }
 
     public Map<String, String> getCabeceras() {
         return cabeceras;
     }
-
-   
 
     public String getMetodo() {
         return metodo;
@@ -75,25 +72,26 @@ public class Peticion {
     public void setUri(String uri) {
         this.uri = uri;
     }
-
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
     
-    public String toString(){
-        String  result= "";
-        result = this.host +" "+this.uri+" "+this.protocol+"\n";
-        for(Map.Entry<String, String> datos : this.cabeceras.entrySet()){
-            result = result.concat(datos.getKey()+" "+datos.getValue());
+    public String getHost(){
+        return this.cabeceras.get("Host");
+    }
+
+    public String toString() {
+        String result = "";
+        result = this.metodo + " " + this.uri + " " + this.protocol + "\r\n";
+        for (Map.Entry<String, String> datos : this.cabeceras.entrySet()) {
+            result = result.concat(datos.getKey() + ": " + datos.getValue() + "\r\n");
         }
-        
-        
+
         return result;
     }
     
+    public String getRuta(){
+        String result = this.uri;
+        result = result.replace("http://", "");
+        
+        return result;
+    }
 
 }

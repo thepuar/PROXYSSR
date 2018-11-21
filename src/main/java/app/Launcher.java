@@ -6,21 +6,27 @@
 package app;
 
 import app.Thread.ThreadPoolManager;
+import java.io.File;
 
 /**
  *
  * @author thepu
  */
 public class Launcher {
-    
-    public static void main(String []args){
-       // ThreadPoolManager.getInstance().execute(new Proxy());
+
+    public static void main(String[] args) {
+        // ThreadPoolManager.getInstance().execute(new Proxy());
         Proxy proxy = new Proxy();
-        while(true){
-        proxy.init();
-        proxy.leerCliente();
+        File directorio = new File("cache");
+        if (!directorio.exists()) {
+            directorio.mkdir();
         }
-       
+        while (true) {
+            proxy.init();
+            proxy.leerCliente();
+
+        }
+
     }
-    
+
 }
