@@ -15,50 +15,16 @@ import java.util.List;
  */
 public class Respuesta {
 
-    byte[] contenido;
-    int tamanyo;
     List<String> cabeceras;
-    public Respuesta(List<String> cabeceras, byte[]contenido){
-        this.contenido = contenido;
-        this.cabeceras = cabeceras;
-    }
     
     
-    public Respuesta(List<String> respuesta) {
+    public Respuesta(List<String> respuesta,String path) {
         
-        boolean vacio = true;
-        List<String> cabeceras = new ArrayList<>();
-        int posicion = 0;
-        for (int i = 0; vacio; i++) {
-            String aux = respuesta.get(i);
-            if(aux.contains("Content-Length:")){
-                System.out.println("Asignando tamaño del contenido");
-                String stamanyo = aux.substring(aux.indexOf(":")+1, aux.length()).trim();
-                tamanyo = Integer.parseInt(stamanyo);
-                contenido = new byte[tamanyo];
-            }
-            if (aux.isEmpty()) {
-                vacio = false;
-                posicion = i + 1;
-            } else {
-                
-            }
-            cabeceras.add(aux);
-
-        }
-        Util util = new Util();
-        for (int i = posicion; i < respuesta.size(); i++) {
-
-            contenido = util.concatenateByteArrays(contenido, respuesta.get(i).getBytes());
-        }
+        cabeceras = respuesta;
         
-        System.out.println("CONTENIDO: ");
+        
+       
     }
-
    
-    
-    public byte[] getContenido(){
-        return this.contenido;
-    }
 
 }

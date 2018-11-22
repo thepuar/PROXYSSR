@@ -23,7 +23,7 @@ public class Launcher {
         }
         while (true) {
             proxy.init();
-            proxy.leerCliente();
+            proxy.processPet();
 
         }
 

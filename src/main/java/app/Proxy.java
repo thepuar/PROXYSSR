@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -35,6 +36,8 @@ public class Proxy implements Runnable {
     BufferedReader br;
     BufferedWriter bw;
     Peticion pet;
+    Respuesta respDelServidor;
+    Respuesta respParaCliente;
 
     public Proxy() {
         try {
@@ -46,7 +49,7 @@ public class Proxy implements Runnable {
 
     public void init() {
         try {
-
+            System.out.println("Esperando conexión del cliente");
             socket = ss.accept();
 
             br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -57,8 +60,19 @@ public class Proxy implements Runnable {
         }
 
     }
+    
+    public void processPet(){
+        //Reenviar peticion
+        this.pet = leerCliente();
+            enviarPetServidor();
+        //Procesar respuesta del servidor
+        //Descargar contenido
+        downloadFiles(this.pet.getRuta());
+        //Enviar respuesta al cliente
+    }
 
-    public void leerCliente() {
+    public Peticion leerCliente() {
+        Peticion  lapeticion = null;
         String mensaje;
         List<String> lineas = new ArrayList<>();
         try {
@@ -71,20 +85,21 @@ public class Proxy implements Runnable {
             }
             //Procesar la lineas
             if (lineas.size() > 0) {
-                pet = new Peticion(lineas);
+                 lapeticion = new Peticion(lineas);
+                
                 // System.out.println("Imprimiento MAP");
                 // System.out.println(pet.toString());
                 bw.write("Recibido");
                 bw.flush();
                 bw.close();
                 br.close();
-                System.out.println("La ruta es: " + pet.getRuta());
-                this.createFolder(pet.getRuta());
+                
             }
 
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
+        return lapeticion;
 
     }
 
@@ -110,7 +125,8 @@ public class Proxy implements Runnable {
         }
     }
 
-    public void sendToServer() {
+    public Respuesta sendToServer() {
+        Respuesta respuesta = null;
         String result = "";
         List<String> lineas = new ArrayList<>();
         try {
@@ -132,84 +148,56 @@ public class Proxy implements Runnable {
             InputStreamReader isr = new InputStreamReader(in);
             BufferedReader br = new BufferedReader(isr);
 
-//            int c;
-//            String respuesta = "";
-//            
-//            while ((c = br.read()) != -1) {
-//                respuesta+= ((char) c);
-//            }
-            String line ="";
-//            int contadorlineas = 1;
-//            while ((line = br.readLine()) != null) {
-//                byte[] array = line.getBytes();
-//                System.out.println("Imprimiendo linea "+contadorlineas);
-//                for(int i = 0; i<array.length;i++){
-//                System.out.println("BYTE["+i+"]:"+String.format("%02X", array[i]));
-//                }
-//                lineas.add(line);
-//                //lineas.add(new String (line.getBytes(),"UTF-8"));
-//                contadorlineas++;
-//            }
-            
+            String line = "";
+//           
             int contadorsaltos = 0;
-            byte[] contenido = new byte[0];
-            int tamanyo = 0;
-            while((line = br.readLine())!=null){
-                if(line.isEmpty())contadorsaltos++;
-                else contadorsaltos = 0;
-                if(contadorsaltos == 1){
-                    //Leer por bytes
-                    int bite = 0;
-                    int i = 0;
-                    while((bite = br.read())!=-1){
-                        System.out.println(String.format("%04X", bite));
-                        contenido[i] = (byte)bite;
-                        i++;
-                    }
-                }else{
+            String rutafinal="";
+            while ((line = br.readLine()) != null) {
+                if (line.isEmpty()) {
+                    contadorsaltos++;
+                } else {
+                    contadorsaltos = 0;
+                }
+                if (contadorsaltos == 1) {
+                      rutafinal =   saveFile(pet.getUri(), pet.getRuta());
+                } else {
                     //Leer por lineas
                     lineas.add(line);
-                    if(line.contains("Content-Length:")){
-                    String stamanyo = line.substring(line.indexOf(":")+1, line.length()).trim();
-                    tamanyo = Integer.parseInt(stamanyo);
-                    contenido = new byte[tamanyo];
-                    }
                 }
-                
             }
+            //Respuesta del servidor
+            respuesta = new Respuesta(lineas, rutafinal);
             
-            
-            Respuesta respuesta = new Respuesta(lineas,contenido);
-           
-
-            System.out.println("RESPUESTA LEIDA");
-            saveFile(contenido);
-
-//            System.out.println("RESPUESTA: "+respuesta);
-//            while (br.ready() && (mensaje = br.readLine()) != null) {
-//                //System.out.println(mensaje);
-//                lineas.add(mensaje);
-//            }
             br.close();
             bw.close();
 
         } catch (IOException ioe) {
         }
         System.out.println("Lineas \n" + lineas);
+        return respuesta;
     }
 
-    public void saveFile(byte[] myByteArray) {
 
-        try (FileOutputStream fos = new FileOutputStream("cache/"+pet.getRuta())) {
-            fos.write(myByteArray);
-            //fos.close(); There is no more need for this line since you had created the instance of "fos" inside the try. And this will automatically close the OutputStream
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+    public String saveFile(String lauri, String file) {
+        FileOutputStream fos;
+        String rutafinal = "cache/"+file;
+        try{
+        BufferedInputStream bis = new BufferedInputStream(new URL(lauri).openStream());
+         fos = new FileOutputStream(rutafinal);
+        byte dataBuffer[] = new byte[1024];
+        int bytesRead;
+        while ((bytesRead = bis.read(dataBuffer, 0, 1024)) != -1) {
+             fos.write(dataBuffer, 0, bytesRead);
         }
-
+        bis.close();
+        fos.close();
+            System.out.println("FICHERO: "+lauri+" Guardado");
+        }catch(IOException ioe ){ioe.printStackTrace();}
+        return rutafinal;
+        
     }
 
-    public void createFolder(String path) {
+    public void downloadFiles(String path) {
         String ruta = "cache/";
         StringTokenizer st = new StringTokenizer(path, "/");
         String cadena = st.nextToken();
